@@ -13,6 +13,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/groups', require('./routes/groups'));
 app.use('/api/tasks', require('./routes/tasks'));
+app.use('/api/announcements', require('./routes/announcements'));
 
 // Test route
 app.get('/', (req, res) => {
