@@ -1,6 +1,19 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
+
+const COLUMNS = [
+  { id: 'todo', label: '📋 To Do', color: '#6366f1' },
+  { id: 'inprogress', label: '🔄 In Progress', color: '#f59e0b' },
+  { id: 'done', label: '✅ Done', color: '#10b981' }
+]
+
+const PRIORITIES = {
+  high: { label: 'High', color: '#ef4444', bg: '#fee2e2' },
+  medium: { label: 'Medium', color: '#f59e0b', bg: '#fef3c7' },
+  low: { label: 'Low', color: '#10b981', bg: '#d1fae5' }
+}
 
 export default function GroupPage() {
   const { groupId } = useParams()
@@ -11,9 +24,10 @@ export default function GroupPage() {
   const [announcements, setAnnouncements] = useState([])
   const [taskTitle, setTaskTitle] = useState('')
   const [taskDesc, setTaskDesc] = useState('')
+  const [taskPriority, setTaskPriority] = useState('medium')
+  const [taskDueDate, setTaskDueDate] = useState('')
   const [annTitle, setAnnTitle] = useState('')
   const [annContent, setAnnContent] = useState('')
-  const [groupName, setGroupName] = useState('')
   const [activeTab, setActiveTab] = useState('tasks')
 
   useEffect(() => {
@@ -47,25 +61,29 @@ export default function GroupPage() {
     e.preventDefault()
     try {
       await axios.post(`http://localhost:5000/api/tasks/${groupId}`,
-        { title: taskTitle, description: taskDesc },
+        { title: taskTitle, description: taskDesc, priority: taskPriority, dueDate: taskDueDate },
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setTaskTitle('')
       setTaskDesc('')
+      setTaskPriority('medium')
+      setTaskDueDate('')
+      toast.success('Task added! ✅')
       fetchTasks()
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to add task')
     }
   }
 
-  const toggleTask = async (taskId) => {
+  const moveTask = async (taskId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/tasks/${groupId}/${taskId}`, {},
+      await axios.put(`http://localhost:5000/api/tasks/${groupId}/${taskId}`,
+        { status: newStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       )
       fetchTasks()
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to move task')
     }
   }
 
@@ -74,9 +92,10 @@ export default function GroupPage() {
       await axios.delete(`http://localhost:5000/api/tasks/${groupId}/${taskId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
+      toast.success('Task deleted!')
       fetchTasks()
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to delete task')
     }
   }
 
@@ -89,9 +108,10 @@ export default function GroupPage() {
       )
       setAnnTitle('')
       setAnnContent('')
+      toast.success('Announcement posted! 📢')
       fetchAnnouncements()
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to post announcement')
     }
   }
 
@@ -100,10 +120,16 @@ export default function GroupPage() {
       await axios.delete(`http://localhost:5000/api/announcements/${groupId}/${annId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       )
+      toast.success('Announcement deleted!')
       fetchAnnouncements()
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to delete')
     }
+  }
+
+  const isOverdue = (dueDate) => {
+    if (!dueDate) return false
+    return new Date(dueDate) < new Date()
   }
 
   return (
@@ -120,141 +146,189 @@ export default function GroupPage() {
         <button
           style={{ ...styles.tab, ...(activeTab === 'tasks' ? styles.activeTab : {}) }}
           onClick={() => setActiveTab('tasks')}
-        >
-          ✅ Tasks
-        </button>
+        >✅ Tasks</button>
         <button
           style={{ ...styles.tab, ...(activeTab === 'announcements' ? styles.activeTab : {}) }}
           onClick={() => setActiveTab('announcements')}
-        >
-          📢 Announcements
-        </button>
+        >📢 Announcements</button>
       </div>
 
-      <div style={styles.body}>
+      {/* TASKS TAB */}
+      {activeTab === 'tasks' && (
+        <div style={styles.body}>
 
-        {/* TASKS TAB */}
-        {activeTab === 'tasks' && (
-          <div>
-            {/* Add Task Form */}
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>➕ Add Task</h3>
-              <form onSubmit={createTask}>
+          {/* Add Task Form */}
+          <div style={styles.formCard}>
+            <h3 style={styles.cardTitle}>➕ Add Task</h3>
+            <form onSubmit={createTask}>
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Task Title"
+                value={taskTitle}
+                onChange={e => setTaskTitle(e.target.value)}
+                required
+              />
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Description (optional)"
+                value={taskDesc}
+                onChange={e => setTaskDesc(e.target.value)}
+              />
+              <div style={styles.formRow}>
+                <select
+                  style={styles.select}
+                  value={taskPriority}
+                  onChange={e => setTaskPriority(e.target.value)}
+                >
+                  <option value="low">🟢 Low Priority</option>
+                  <option value="medium">🟡 Medium Priority</option>
+                  <option value="high">🔴 High Priority</option>
+                </select>
                 <input
-                  style={styles.input}
-                  type="text"
-                  placeholder="Task Title"
-                  value={taskTitle}
-                  onChange={e => setTaskTitle(e.target.value)}
-                  required
+                  style={styles.dateInput}
+                  type="date"
+                  value={taskDueDate}
+                  onChange={e => setTaskDueDate(e.target.value)}
                 />
-                <input
-                  style={styles.input}
-                  type="text"
-                  placeholder="Description (optional)"
-                  value={taskDesc}
-                  onChange={e => setTaskDesc(e.target.value)}
-                />
-                <button style={styles.button} type="submit">Add Task</button>
-              </form>
-            </div>
+              </div>
+              <button style={styles.button} type="submit">Add Task</button>
+            </form>
+          </div>
 
-            {/* Tasks List */}
-            {tasks.length === 0 ? (
-              <p style={styles.empty}>No tasks yet. Add one!</p>
-            ) : (
-              tasks.map(task => (
-                <div key={task._id} style={styles.taskCard}>
-                  <div style={styles.taskLeft}>
-                    <input
-                      type="checkbox"
-                      checked={task.completed}
-                      onChange={() => toggleTask(task._id)}
-                      style={styles.checkbox}
-                    />
-                    <div>
-                      <p style={{
-                        ...styles.taskTitle,
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                        color: task.completed ? '#888' : '#333'
-                      }}>
-                        {task.title}
-                      </p>
+          {/* Kanban Board */}
+          <div style={styles.kanban}>
+            {COLUMNS.map(col => (
+              <div key={col.id} style={styles.column}>
+
+                {/* Column Header */}
+                <div style={{ ...styles.columnHeader, borderTop: `3px solid ${col.color}` }}>
+                  <span style={styles.columnTitle}>{col.label}</span>
+                  <span style={{ ...styles.columnCount, background: col.color }}>
+                    {tasks.filter(t => t.status === col.id).length}
+                  </span>
+                </div>
+
+                {/* Tasks in Column */}
+                {tasks
+                  .filter(task => task.status === col.id)
+                  .map(task => (
+                    <div key={task._id} style={styles.taskCard}>
+
+                      {/* Priority Badge */}
+                      <div style={styles.taskTop}>
+                        <span style={{
+                          ...styles.priorityBadge,
+                          color: PRIORITIES[task.priority].color,
+                          background: PRIORITIES[task.priority].bg
+                        }}>
+                          {PRIORITIES[task.priority].label}
+                        </span>
+                        <button
+                          style={styles.deleteBtn}
+                          onClick={() => deleteTask(task._id)}
+                        >🗑️</button>
+                      </div>
+
+                      {/* Task Title */}
+                      <p style={styles.taskTitle}>{task.title}</p>
                       {task.description && (
                         <p style={styles.taskDesc}>{task.description}</p>
                       )}
+
+                      {/* Due Date */}
+                      {task.dueDate && (
+                        <p style={{
+                          ...styles.dueDate,
+                          color: isOverdue(task.dueDate) ? '#ef4444' : '#888'
+                        }}>
+                          📅 {new Date(task.dueDate).toLocaleDateString()}
+                          {isOverdue(task.dueDate) && ' ⚠️ Overdue'}
+                        </p>
+                      )}
+
+                      {/* Move Buttons */}
+                      <div style={styles.moveButtons}>
+                        {col.id !== 'todo' && (
+                          <button
+                            style={styles.moveBtn}
+                            onClick={() => moveTask(task._id, col.id === 'inprogress' ? 'todo' : 'inprogress')}
+                          >← Back</button>
+                        )}
+                        {col.id !== 'done' && (
+                          <button
+                            style={{ ...styles.moveBtn, ...styles.moveBtnForward }}
+                            onClick={() => moveTask(task._id, col.id === 'todo' ? 'inprogress' : 'done')}
+                          >Forward →</button>
+                        )}
+                      </div>
+
                     </div>
-                  </div>
-                  <button
-                    style={styles.deleteBtn}
-                    onClick={() => deleteTask(task._id)}
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))
-            )}
+                  ))}
+
+                {/* Empty Column */}
+                {tasks.filter(t => t.status === col.id).length === 0 && (
+                  <p style={styles.emptyCol}>No tasks here</p>
+                )}
+
+              </div>
+            ))}
           </div>
-        )}
 
-        {/* ANNOUNCEMENTS TAB */}
-        {activeTab === 'announcements' && (
-          <div>
-            {/* Add Announcement Form */}
-            <div style={styles.card}>
-              <h3 style={styles.cardTitle}>📢 New Announcement</h3>
-              <form onSubmit={createAnnouncement}>
-                <input
-                  style={styles.input}
-                  type="text"
-                  placeholder="Title"
-                  value={annTitle}
-                  onChange={e => setAnnTitle(e.target.value)}
-                  required
-                />
-                <textarea
-                  style={{ ...styles.input, height: '80px', resize: 'vertical' }}
-                  placeholder="Content"
-                  value={annContent}
-                  onChange={e => setAnnContent(e.target.value)}
-                  required
-                />
-                <button style={styles.button} type="submit">Post</button>
-              </form>
-            </div>
+        </div>
+      )}
 
-            {/* Announcements List */}
-            {announcements.length === 0 ? (
-              <p style={styles.empty}>No announcements yet.</p>
-            ) : (
-              announcements.map(ann => (
-                <div key={ann._id} style={styles.annCard}>
-                  <div>
-                    <h3 style={styles.annTitle}>{ann.title}</h3>
-                    <p style={styles.annContent}>{ann.content}</p>
-                    <p style={styles.annMeta}>
-                      Posted by {ann.createdBy?.name} · {new Date(ann.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    style={styles.deleteBtn}
-                    onClick={() => deleteAnnouncement(ann._id)}
-                  >
-                    🗑️
-                  </button>
-                </div>
-              ))
-            )}
+      {/* ANNOUNCEMENTS TAB */}
+      {activeTab === 'announcements' && (
+        <div style={styles.annBody}>
+          <div style={styles.formCard}>
+            <h3 style={styles.cardTitle}>📢 New Announcement</h3>
+            <form onSubmit={createAnnouncement}>
+              <input
+                style={styles.input}
+                type="text"
+                placeholder="Title"
+                value={annTitle}
+                onChange={e => setAnnTitle(e.target.value)}
+                required
+              />
+              <textarea
+                style={{ ...styles.input, height: '80px', resize: 'vertical' }}
+                placeholder="Content"
+                value={annContent}
+                onChange={e => setAnnContent(e.target.value)}
+                required
+              />
+              <button style={styles.button} type="submit">Post</button>
+            </form>
           </div>
-        )}
 
-      </div>
+          {announcements.length === 0 ? (
+            <p style={styles.empty}>No announcements yet.</p>
+          ) : (
+            announcements.map(ann => (
+              <div key={ann._id} style={styles.annCard}>
+                <div>
+                  <h3 style={styles.annTitle}>{ann.title}</h3>
+                  <p style={styles.annContent}>{ann.content}</p>
+                  <p style={styles.annMeta}>
+                    Posted by {ann.createdBy?.name} · {new Date(ann.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <button style={styles.deleteBtn} onClick={() => deleteAnnouncement(ann._id)}>🗑️</button>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
     </div>
   )
 }
 
 const styles = {
-  container: { minHeight: '100vh', background: '#f0f2f5' },
+  container: { minHeight: '100vh', background: '#f7f7f5' },
   header: {
     background: '#4f46e5',
     color: 'white',
@@ -275,7 +349,6 @@ const styles = {
   },
   tabs: {
     display: 'flex',
-    gap: '0',
     background: 'white',
     borderBottom: '2px solid #eee',
     padding: '0 32px'
@@ -293,19 +366,20 @@ const styles = {
     borderBottom: '2px solid #4f46e5',
     fontWeight: 'bold'
   },
-  body: {
+  body: { padding: '24px 32px' },
+  annBody: {
     maxWidth: '800px',
     margin: '0 auto',
     padding: '32px'
   },
-  card: {
+  formCard: {
     background: 'white',
     borderRadius: '12px',
     padding: '24px',
     marginBottom: '24px',
     boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
   },
-  cardTitle: { marginBottom: '16px', fontSize: '16px' },
+  cardTitle: { marginBottom: '16px', fontSize: '16px', fontWeight: '600' },
   input: {
     width: '100%',
     padding: '10px',
@@ -316,6 +390,26 @@ const styles = {
     display: 'block',
     boxSizing: 'border-box'
   },
+  formRow: {
+    display: 'flex',
+    gap: '12px',
+    marginBottom: '12px'
+  },
+  select: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontSize: '14px',
+    background: 'white'
+  },
+  dateInput: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontSize: '14px'
+  },
   button: {
     width: '100%',
     padding: '10px',
@@ -324,27 +418,87 @@ const styles = {
     border: 'none',
     borderRadius: '8px',
     cursor: 'pointer',
-    fontSize: '14px'
+    fontSize: '14px',
+    fontWeight: '500'
+  },
+  kanban: {
+    display: 'flex',
+    gap: '20px',
+    alignItems: 'flex-start'
+  },
+  column: {
+    flex: 1,
+    background: '#f1f1ef',
+    borderRadius: '12px',
+    padding: '16px',
+    minHeight: '300px'
+  },
+  columnHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '16px',
+    padding: '12px',
+    background: 'white',
+    borderRadius: '8px'
+  },
+  columnTitle: { fontWeight: '600', fontSize: '14px' },
+  columnCount: {
+    color: 'white',
+    borderRadius: '12px',
+    padding: '2px 8px',
+    fontSize: '12px',
+    fontWeight: 'bold'
   },
   taskCard: {
     background: 'white',
-    borderRadius: '12px',
-    padding: '16px 20px',
+    borderRadius: '10px',
+    padding: '14px',
     marginBottom: '12px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+  },
+  taskTop: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: '8px'
   },
-  taskLeft: { display: 'flex', alignItems: 'center', gap: '12px' },
-  checkbox: { width: '18px', height: '18px', cursor: 'pointer' },
-  taskTitle: { fontSize: '15px', fontWeight: '500' },
-  taskDesc: { fontSize: '13px', color: '#888', marginTop: '2px' },
+  priorityBadge: {
+    fontSize: '11px',
+    fontWeight: '600',
+    padding: '3px 8px',
+    borderRadius: '12px'
+  },
+  taskTitle: { fontSize: '14px', fontWeight: '500', marginBottom: '4px' },
+  taskDesc: { fontSize: '12px', color: '#888', marginBottom: '8px' },
+  dueDate: { fontSize: '12px', marginBottom: '8px' },
+  moveButtons: { display: 'flex', gap: '8px', marginTop: '8px' },
+  moveBtn: {
+    flex: 1,
+    padding: '6px',
+    border: '1px solid #ddd',
+    borderRadius: '6px',
+    background: 'white',
+    cursor: 'pointer',
+    fontSize: '12px',
+    color: '#555'
+  },
+  moveBtnForward: {
+    background: '#4f46e5',
+    color: 'white',
+    border: 'none'
+  },
   deleteBtn: {
     background: 'none',
     border: 'none',
     cursor: 'pointer',
-    fontSize: '18px'
+    fontSize: '16px'
+  },
+  emptyCol: {
+    color: '#bbb',
+    fontSize: '13px',
+    textAlign: 'center',
+    marginTop: '20px'
   },
   annCard: {
     background: 'white',
@@ -356,7 +510,7 @@ const styles = {
     justifyContent: 'space-between',
     alignItems: 'flex-start'
   },
-  annTitle: { fontSize: '16px', marginBottom: '6px' },
+  annTitle: { fontSize: '16px', marginBottom: '6px', fontWeight: '600' },
   annContent: { fontSize: '14px', color: '#555', marginBottom: '8px' },
   annMeta: { fontSize: '12px', color: '#aaa' },
   empty: { color: '#888', fontSize: '14px', textAlign: 'center', marginTop: '40px' }

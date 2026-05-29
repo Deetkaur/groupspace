@@ -4,6 +4,17 @@ const TaskSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, default: '' },
   completed: { type: Boolean, default: false },
+  status: { 
+    type: String, 
+    enum: ['todo', 'inprogress', 'done'],
+    default: 'todo'
+  },
+  priority: {
+    type: String,
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
+  dueDate: { type: Date, default: null },
   group: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
   assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
