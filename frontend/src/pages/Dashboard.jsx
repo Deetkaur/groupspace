@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
+import Spinner from '../components/Spinner'
 
 export default function Dashboard() {
   const [groups, setGroups] = useState([])
@@ -8,6 +10,7 @@ export default function Dashboard() {
   const [groupDesc, setGroupDesc] = useState('')
   const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
+  const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('user'))
@@ -23,8 +26,10 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       })
       setGroups(res.data)
+      setLoading(false)
     } catch (err) {
       console.error(err)
+      setLoading(false)
     }
   }
 
@@ -37,9 +42,10 @@ export default function Dashboard() {
       )
       setGroupName('')
       setGroupDesc('')
+      toast.success('Group created! 🎉')
       fetchGroups()
     } catch (err) {
-      setError('Failed to create group')
+      toast.error('Failed to create group')
     }
   }
 
@@ -51,9 +57,10 @@ export default function Dashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setInviteCode('')
+      toast.success('Joined group! 🎉')
       fetchGroups()
     } catch (err) {
-      setError('Invalid invite code')
+      toast.error('Invalid invite code')
     }
   }
 
@@ -69,11 +76,15 @@ export default function Dashboard() {
       <div style={styles.header}>
         <h1 style={styles.logo}>🏠 GroupSpace</h1>
         <div style={styles.headerRight}>
-          <span style={styles.username}>👤 {user?.name}</span>
+          <div style={styles.avatar}>
+            {user?.name?.charAt(0).toUpperCase()}
+          </div>
+          <span style={styles.username}>{user?.name}</span>
           <button style={styles.logoutBtn} onClick={logout}>Logout</button>
         </div>
       </div>
 
+      {/* Body */}
       <div style={styles.body}>
 
         {/* Left Panel */}
@@ -121,10 +132,12 @@ export default function Dashboard() {
 
         </div>
 
-        {/* Right Panel - Groups List */}
+        {/* Right Panel */}
         <div style={styles.rightPanel}>
           <h2 style={styles.sectionTitle}>Your Groups</h2>
-          {groups.length === 0 ? (
+          {loading ? (
+            <Spinner />
+          ) : groups.length === 0 ? (
             <p style={styles.empty}>No groups yet. Create or join one!</p>
           ) : (
             groups.map(group => (
@@ -215,6 +228,18 @@ const styles = {
     boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
     cursor: 'pointer',
     transition: 'transform 0.2s',
+  },
+  avatar: {
+    width: '36px',
+    height: '36px',
+    borderRadius: '50%',
+    background: 'white',
+    color: '#4f46e5',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    fontSize: '16px'
   },
   groupName: { fontSize: '18px', marginBottom: '4px' },
   groupDesc: { color: '#888', fontSize: '14px', marginBottom: '8px' },

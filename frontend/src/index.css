@@ -5,7 +5,19 @@
 }
 
 body {
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #f0f2f5;
-  color: #333;
+  font-family: 'Inter', sans-serif;
+  background-color: #f7f7f5;
+  color: #37352f;
+}
+
+button {
+  font-family: 'Inter', sans-serif;
+}
+
+input, textarea {
+  font-family: 'Inter', sans-serif;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }

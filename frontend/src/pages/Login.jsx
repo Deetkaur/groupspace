@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
@@ -12,16 +13,17 @@ export default function Login() {
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    try {
-      const res = await axios.post('http://localhost:5000/api/auth/login', form)
-      localStorage.setItem('token', res.data.token)
-      localStorage.setItem('user', JSON.stringify(res.data.user))
-      navigate('/dashboard')
-    } catch (err) {
-      setError('Invalid email or password')
-    }
+  e.preventDefault()
+  try {
+    const res = await axios.post('http://localhost:5000/api/auth/login', form)
+    localStorage.setItem('token', res.data.token)
+    localStorage.setItem('user', JSON.stringify(res.data.user))
+    toast.success('Welcome back! 👋')
+    navigate('/dashboard')
+  } catch (err) {
+    toast.error('Invalid email or password')
   }
+}
 
   return (
     <div style={styles.container}>
