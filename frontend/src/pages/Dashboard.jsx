@@ -3,6 +3,7 @@ import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Spinner from '../components/Spinner'
+import { useTheme } from '../context/ThemeContext'
 
 export default function Dashboard() {
   const [groups, setGroups] = useState([])
@@ -16,6 +17,7 @@ export default function Dashboard() {
 
   const user = JSON.parse(localStorage.getItem('user'))
   const token = localStorage.getItem('token')
+  const { colors, darkMode, toggleDarkMode } = useTheme()
 
   useEffect(() => {
     fetchGroups()
@@ -72,12 +74,15 @@ export default function Dashboard() {
   }
 
   return (
-    <div style={styles.container}>
+    <div style={{ ...styles.container, background: colors.bg }}>
 
       {/* Header */}
-      <div style={styles.header}>
+      <div style={{ ...styles.header, background: colors.header }}>
         <h1 style={styles.logo}>🏠 GroupSpace</h1>
         <div style={styles.headerRight}>
+          <button onClick={toggleDarkMode} style={styles.darkToggle}>
+            {darkMode ? '☀️' : '🌙'}
+          </button>
           <div style={styles.avatar}>
             {user?.name?.charAt(0).toUpperCase()}
           </div>
@@ -93,7 +98,7 @@ export default function Dashboard() {
         <div style={styles.leftPanel}>
 
           {/* Create Group */}
-          <div style={styles.card}>
+          <div style={{ ...styles.card, background: colors.card }}>
             <h3 style={styles.cardTitle}>➕ Create Group</h3>
             {error && <p style={styles.error}>{error}</p>}
             <form onSubmit={createGroup}>
@@ -133,7 +138,7 @@ export default function Dashboard() {
           </div>
 
           {/* Join Group */}
-          <div style={styles.card}>
+          <div style={{ ...styles.card, background: colors.card }}>
             <h3 style={styles.cardTitle}>🔗 Join Group</h3>
             <form onSubmit={joinGroup}>
               <input
@@ -161,8 +166,10 @@ export default function Dashboard() {
             groups.map(group => (
               <div
                 key={group._id}
+                className="card-hover fade-in"
                 style={{
                   ...styles.groupCard,
+                  background: colors.card,
                   borderLeft: `4px solid ${group.color || '#4f46e5'}`
                 }}
                 onClick={() => navigate(`/group/${group._id}`)}
@@ -275,6 +282,15 @@ const styles = {
     height: '24px',
     borderRadius: '50%',
     cursor: 'pointer'
+  },
+  darkToggle: {
+    background: 'rgba(255,255,255,0.2)',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '8px 12px',
+    cursor: 'pointer',
+    fontSize: '16px',
+    color: 'white'
   },
   groupName: { fontSize: '18px', marginBottom: '4px' },
   groupDesc: { color: '#888', fontSize: '14px', marginBottom: '8px' },

@@ -6,18 +6,72 @@
 
 body {
   font-family: 'Inter', sans-serif;
-  background-color: #f7f7f5;
   color: #37352f;
+  transition: background 0.3s ease;
 }
 
 button {
   font-family: 'Inter', sans-serif;
 }
 
-input, textarea {
+input, textarea, select {
   font-family: 'Inter', sans-serif;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+/* Button hover */
+button:hover {
+  opacity: 0.9;
+}
+
+/* Input focus */
+input:focus, textarea:focus, select:focus {
+  outline: none;
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* Card hover */
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.12) !important;
+  transition: all 0.2s ease;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
 }
