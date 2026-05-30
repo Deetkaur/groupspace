@@ -11,6 +11,7 @@ export default function Dashboard() {
   const [inviteCode, setInviteCode] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [groupColor, setGroupColor] = useState('#4f46e5')
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('user'))
@@ -37,11 +38,12 @@ export default function Dashboard() {
     e.preventDefault()
     try {
       await axios.post('http://localhost:5000/api/groups/create',
-        { name: groupName, description: groupDesc },
+        { name: groupName, description: groupDesc, color: groupColor },
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setGroupName('')
       setGroupDesc('')
+      setGroupColor('#4f46e5')
       toast.success('Group created! 🎉')
       fetchGroups()
     } catch (err) {
@@ -110,6 +112,22 @@ export default function Dashboard() {
                 value={groupDesc}
                 onChange={e => setGroupDesc(e.target.value)}
               />
+              <div style={styles.colorRow}>
+                <label style={styles.colorLabel}>Group Color:</label>
+                <div style={styles.colorOptions}>
+                  {['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map(c => (
+                    <div
+                      key={c}
+                      onClick={() => setGroupColor(c)}
+                      style={{
+                        ...styles.colorDot,
+                        background: c,
+                        border: groupColor === c ? '3px solid #333' : '3px solid transparent'
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
               <button style={styles.button} type="submit">Create</button>
             </form>
           </div>
@@ -143,10 +161,13 @@ export default function Dashboard() {
             groups.map(group => (
               <div
                 key={group._id}
-                style={styles.groupCard}
+                style={{
+                  ...styles.groupCard,
+                  borderLeft: `4px solid ${group.color || '#4f46e5'}`
+                }}
                 onClick={() => navigate(`/group/${group._id}`)}
               >
-                <h3 style={styles.groupName}>{group.name}</h3>
+                <h3 style={{ ...styles.groupName, color: group.color || '#4f46e5' }}>{group.name}</h3>
                 <p style={styles.groupDesc}>{group.description}</p>
                 <p style={styles.inviteCode}>Invite Code: <strong>{group.inviteCode}</strong></p>
               </div>
@@ -240,6 +261,20 @@ const styles = {
     justifyContent: 'center',
     fontWeight: 'bold',
     fontSize: '16px'
+  },
+  colorRow: {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '12px',
+  marginBottom: '12px'
+  },
+  colorLabel: { fontSize: '13px', color: '#555' },
+  colorOptions: { display: 'flex', gap: '8px' },
+  colorDot: {
+    width: '24px',
+    height: '24px',
+    borderRadius: '50%',
+    cursor: 'pointer'
   },
   groupName: { fontSize: '18px', marginBottom: '4px' },
   groupDesc: { color: '#888', fontSize: '14px', marginBottom: '8px' },

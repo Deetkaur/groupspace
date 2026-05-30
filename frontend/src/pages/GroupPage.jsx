@@ -29,10 +29,12 @@ export default function GroupPage() {
   const [annTitle, setAnnTitle] = useState('')
   const [annContent, setAnnContent] = useState('')
   const [activeTab, setActiveTab] = useState('tasks')
+  const [group, setGroup] = useState(null)
 
   useEffect(() => {
     fetchTasks()
     fetchAnnouncements()
+    fetchGroup()
   }, [])
 
   const fetchTasks = async () => {
@@ -52,6 +54,17 @@ export default function GroupPage() {
         headers: { Authorization: `Bearer ${token}` }
       })
       setAnnouncements(res.data)
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
+  const fetchGroup = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/groups/${groupId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setGroup(res.data)
     } catch (err) {
       console.error(err)
     }
@@ -151,6 +164,10 @@ export default function GroupPage() {
           style={{ ...styles.tab, ...(activeTab === 'announcements' ? styles.activeTab : {}) }}
           onClick={() => setActiveTab('announcements')}
         >📢 Announcements</button>
+        <button
+          style={{ ...styles.tab, ...(activeTab === 'members' ? styles.activeTab : {}) }}
+          onClick={() => setActiveTab('members')}
+        >👥 Members</button>
       </div>
 
       {/* TASKS TAB */}
@@ -320,6 +337,54 @@ export default function GroupPage() {
               </div>
             ))
           )}
+        </div>
+      )}
+
+      {/* MEMBERS TAB */}
+      {activeTab === 'members' && (
+        <div style={styles.annBody}>
+
+          {/* Activity Feed */}
+          <div style={styles.formCard}>
+            <h3 style={styles.cardTitle}>📋 Activity Feed</h3>
+            {group?.activity?.length === 0 ? (
+              <p style={styles.empty}>No activity yet.</p>
+            ) : (
+              [...(group?.activity || [])].reverse().map((act, i) => (
+                <div key={i} style={styles.activityItem}>
+                  <span style={styles.activityDot}>●</span>
+                  <div>
+                    <p style={styles.activityText}>{act.text}</p>
+                    <p style={styles.activityTime}>
+                      {new Date(act.createdAt).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Members List */}
+          <div style={styles.formCard}>
+            <h3 style={styles.cardTitle}>👥 Members ({group?.members?.length || 0})</h3>
+            {group?.members?.map(member => (
+              <div key={member._id} style={styles.memberItem}>
+                <div style={styles.memberAvatar}>
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <p style={styles.memberName}>
+                    {member.name}
+                    {member._id === group?.admin?._id && (
+                      <span style={styles.adminBadge}>Admin</span>
+                    )}
+                  </p>
+                  <p style={styles.memberEmail}>{member.email}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
         </div>
       )}
 
@@ -509,6 +574,46 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start'
+  },
+  activityItem: {
+    display: 'flex',
+    gap: '12px',
+    alignItems: 'flex-start',
+    padding: '10px 0',
+    borderBottom: '1px solid #f0f0f0'
+  },
+  activityDot: { color: '#4f46e5', fontSize: '10px', marginTop: '4px' },
+  activityText: { fontSize: '14px', color: '#333' },
+  activityTime: { fontSize: '12px', color: '#aaa', marginTop: '2px' },
+  memberItem: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    padding: '12px 0',
+    borderBottom: '1px solid #f0f0f0'
+  },
+  memberAvatar: {
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    background: '#4f46e5',
+    color: 'white',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontWeight: 'bold',
+    fontSize: '16px',
+    flexShrink: 0
+  },
+  memberName: { fontSize: '14px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' },
+  memberEmail: { fontSize: '12px', color: '#888' },
+  adminBadge: {
+    background: '#4f46e5',
+    color: 'white',
+    fontSize: '10px',
+    padding: '2px 8px',
+    borderRadius: '12px',
+    fontWeight: '500'
   },
   annTitle: { fontSize: '16px', marginBottom: '6px', fontWeight: '600' },
   annContent: { fontSize: '14px', color: '#555', marginBottom: '8px' },

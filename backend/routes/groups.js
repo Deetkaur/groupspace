@@ -4,27 +4,29 @@ const auth = require('../middleware/auth');
 const Group = require('../models/Group');
 const User = require('../models/User');
 
-// Generate random invite code
 const generateInviteCode = () => {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 };
 
-// POST /api/groups/create — Create a new group
+// POST - Create group
 router.post('/create', auth, async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, color } = req.body;
+
+    const user = await User.findById(req.userId);
 
     const group = new Group({
       name,
       description,
+      color: color || '#4f46e5',
       inviteCode: generateInviteCode(),
       admin: req.userId,
-      members: [req.userId]
+      members: [req.userId],
+      activity: [{ text: `${user.name} created the group` }]
     });
 
     await group.save();
 
-    // Add group to user's groups array
     await User.findByIdAndUpdate(req.userId, {
       $push: { groups: group._id }
     });
@@ -35,24 +37,23 @@ router.post('/create', auth, async (req, res) => {
   }
 });
 
-// POST /api/groups/join — Join a group using invite code
+// POST - Join group
 router.post('/join', auth, async (req, res) => {
   try {
     const { inviteCode } = req.body;
+    const user = await User.findById(req.userId);
 
     const group = await Group.findOne({ inviteCode });
     if (!group) return res.status(404).json({ msg: 'Invalid invite code' });
 
-    // Check if already a member
     if (group.members.includes(req.userId)) {
       return res.status(400).json({ msg: 'Already a member' });
     }
 
-    // Add user to group
     group.members.push(req.userId);
+    group.activity.push({ text: `${user.name} joined the group` });
     await group.save();
 
-    // Add group to user's groups array
     await User.findByIdAndUpdate(req.userId, {
       $push: { groups: group._id }
     });
@@ -63,11 +64,24 @@ router.post('/join', auth, async (req, res) => {
   }
 });
 
-// GET /api/groups/mygroups — Get all groups for logged in user
+// GET - My groups
 router.get('/mygroups', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate('groups');
     res.json(user.groups);
+  } catch (err) {
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
+// GET - Single group details
+router.get('/:groupId', auth, async (req, res) => {
+  try {
+    const group = await Group.findById(req.params.groupId)
+      .populate('members', 'name email')
+      .populate('admin', 'name email');
+    if (!group) return res.status(404).json({ msg: 'Group not found' });
+    res.json(group);
   } catch (err) {
     res.status(500).json({ msg: 'Server error' });
   }
