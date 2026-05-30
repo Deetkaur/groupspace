@@ -33,19 +33,12 @@ router.post('/:groupId', auth, checkGroupMember, async (req, res) => {
       createdBy: req.userId
     });
     await task.save();
-    res.json(task);
-  } catch (err) {
-    res.status(500).json({ msg: err.message });
-  }
-});
 
-// GET - Get all tasks
-router.get('/:groupId', auth, checkGroupMember, async (req, res) => {
-  try {
-    const tasks = await Task.find({ group: req.params.groupId })
-      .populate('assignedTo', 'name email')
-      .populate('createdBy', 'name email');
-    res.json(tasks);
+    // Emit real-time event to all group members
+    const io = req.app.get('io');
+    io.to(req.params.groupId).emit('task_added', task);
+
+    res.json(task);
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }
@@ -62,6 +55,11 @@ router.put('/:groupId/:taskId', auth, checkGroupMember, async (req, res) => {
     if (typeof completed === 'boolean') task.completed = completed;
 
     await task.save();
+
+    // Emit real-time event
+    const io = req.app.get('io');
+    io.to(req.params.groupId).emit('task_updated', task);
+
     res.json(task);
   } catch (err) {
     res.status(500).json({ msg: err.message });
@@ -72,7 +70,24 @@ router.put('/:groupId/:taskId', auth, checkGroupMember, async (req, res) => {
 router.delete('/:groupId/:taskId', auth, checkGroupMember, async (req, res) => {
   try {
     await Task.findByIdAndDelete(req.params.taskId);
+
+    // Emit real-time event
+    const io = req.app.get('io');
+    io.to(req.params.groupId).emit('task_deleted', req.params.taskId);
+
     res.json({ msg: 'Task deleted' });
+  } catch (err) {
+    res.status(500).json({ msg: err.message });
+  }
+});
+
+// GET - Get all tasks
+router.get('/:groupId', auth, checkGroupMember, async (req, res) => {
+  try {
+    const tasks = await Task.find({ group: req.params.groupId })
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name email');
+    res.json(tasks);
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

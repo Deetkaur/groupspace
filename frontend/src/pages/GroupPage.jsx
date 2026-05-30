@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useParams, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
+import { io } from 'socket.io-client'
 
 const COLUMNS = [
   { id: 'todo', label: '📋 To Do', color: '#6366f1' },
@@ -30,11 +31,43 @@ export default function GroupPage() {
   const [annContent, setAnnContent] = useState('')
   const [activeTab, setActiveTab] = useState('tasks')
   const [group, setGroup] = useState(null)
+  const [search, setSearch] = useState('')
 
   useEffect(() => {
     fetchTasks()
     fetchAnnouncements()
     fetchGroup()
+
+    // Connect to socket
+    const socket = io('http://localhost:5000')
+
+    // Join the group room
+    socket.emit('join_group', groupId)
+
+    // Listen for real-time events
+    socket.on('task_added', (task) => {
+      setTasks(prev => [...prev, task])
+      toast.success('New task added! ✅')
+    })
+
+    socket.on('task_updated', (updatedTask) => {
+      setTasks(prev => prev.map(t => t._id === updatedTask._id ? updatedTask : t))
+    })
+
+    socket.on('task_deleted', (taskId) => {
+      setTasks(prev => prev.filter(t => t._id !== taskId))
+    })
+
+    socket.on('announcement_added', (announcement) => {
+      setAnnouncements(prev => [announcement, ...prev])
+      toast.success('New announcement! 📢')
+    })
+
+    // Cleanup on leave
+    return () => {
+      socket.emit('leave_group', groupId)
+      socket.disconnect()
+    }
   }, [])
 
   const fetchTasks = async () => {
@@ -214,6 +247,15 @@ export default function GroupPage() {
             </form>
           </div>
 
+          {/* Search Bar */}
+          <input
+            style={styles.searchBar}
+            type="text"
+            placeholder="🔍 Search tasks..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+
           {/* Kanban Board */}
           <div style={styles.kanban}>
             {COLUMNS.map(col => (
@@ -230,6 +272,7 @@ export default function GroupPage() {
                 {/* Tasks in Column */}
                 {tasks
                   .filter(task => task.status === col.id)
+                  .filter(task => task.title.toLowerCase().includes(search.toLowerCase()))
                   .map(task => (
                     <div key={task._id} style={styles.taskCard}>
 
@@ -581,6 +624,17 @@ const styles = {
     alignItems: 'flex-start',
     padding: '10px 0',
     borderBottom: '1px solid #f0f0f0'
+  },
+  searchBar: {
+    width: '100%',
+    padding: '12px 16px',
+    borderRadius: '8px',
+    border: '1px solid #ddd',
+    fontSize: '14px',
+    marginBottom: '20px',
+    boxSizing: 'border-box',
+    background: 'white',
+    boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
   },
   activityDot: { color: '#4f46e5', fontSize: '10px', marginTop: '4px' },
   activityText: { fontSize: '14px', color: '#333' },

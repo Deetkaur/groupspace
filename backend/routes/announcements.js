@@ -22,12 +22,9 @@ const checkGroupMember = async (req, res, next) => {
   }
 };
 
-// POST /api/announcements/:groupId — Create announcement
+// POST - Create announcement
 router.post('/:groupId', auth, checkGroupMember, async (req, res) => {
   try {
-    console.log('Reached POST route');
-    console.log('userId:', req.userId);
-    console.log('groupId:', req.params.groupId);
     const { title, content } = req.body;
 
     const announcement = new Announcement({
@@ -38,6 +35,11 @@ router.post('/:groupId', auth, checkGroupMember, async (req, res) => {
     });
 
     await announcement.save();
+
+    // Emit real-time event
+    const io = req.app.get('io');
+    io.to(req.params.groupId).emit('announcement_added', announcement);
+
     res.json(announcement);
   } catch (err) {
     console.error(err);
