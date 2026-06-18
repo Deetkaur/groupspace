@@ -46,11 +46,19 @@
     const [annTitle, setAnnTitle] = useState('')
     const [annContent, setAnnContent] = useState('')
 
+    const [events, setEvents] = useState([])
+    const [currentDate, setCurrentDate] = useState(new Date())
+    const [showEventForm, setShowEventForm] = useState(false)
+    const [eventTitle, setEventTitle] = useState('')
+    const [eventDate, setEventDate] = useState('')
+    const [eventColor, setEventColor] = useState('#3D280D')
+
     useEffect(() => {
       fetchTasks()
       fetchAnnouncements()
       fetchGroup()
       fetchNotes()
+      fetchEvents()
       // ... rest of socket code
 
       const socket = io('http://localhost:5000')
@@ -99,6 +107,15 @@
           headers: { Authorization: `Bearer ${token}` }
         })
         setNotes(res.data)
+      } catch (err) { console.error(err) }
+    }
+
+    const fetchEvents = async () => {
+      try {
+        const res = await axios.get(`http://localhost:5000/api/events/${groupId}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setEvents(res.data)
       } catch (err) { console.error(err) }
     }
 
@@ -426,6 +443,105 @@
             </div>
           )}
 
+          {/* CALENDAR TAB */}
+          {activeTab === 'calendar' && (
+            <div style={styles.content}>
+              <div style={styles.pageHeader}>
+                <div style={styles.calendarTopRow}>
+                  <div>
+                    <h1 style={styles.pageTitle}>
+                      {currentDate.toLocaleString('default', { month: 'long' })} {currentDate.getFullYear()}
+                    </h1>
+                    <p style={styles.pageSubtitle}>Shared schedule for your workspace.</p>
+                  </div>
+                  <div style={styles.calendarControls}>
+                    <button style={styles.calNavBtn} onClick={() => {
+                      const d = new Date(currentDate)
+                      d.setMonth(d.getMonth() - 1)
+                      setCurrentDate(d)
+                    }}>‹</button>
+                    <button style={styles.calTodayBtn} onClick={() => setCurrentDate(new Date())}>Today</button>
+                    <button style={styles.calNavBtn} onClick={() => {
+                      const d = new Date(currentDate)
+                      d.setMonth(d.getMonth() + 1)
+                      setCurrentDate(d)
+                    }}>›</button>
+                    <button style={styles.newEventBtn} onClick={() => setShowEventForm(true)}>+ New event</button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calendar Grid */}
+              <div style={styles.calendarGrid}>
+                {/* Day Headers */}
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                  <div key={day} style={styles.calDayHeader}>{day}</div>
+                ))}
+
+                {/* Calendar Cells */}
+                {(() => {
+                  const year = currentDate.getFullYear()
+                  const month = currentDate.getMonth()
+                  const firstDay = new Date(year, month, 1).getDay()
+                  const daysInMonth = new Date(year, month + 1, 0).getDate()
+                  const today = new Date()
+                  const cells = []
+
+                  // Empty cells before first day
+                  for (let i = 0; i < firstDay; i++) {
+                    cells.push(<div key={`empty-${i}`} style={styles.calCell} />)
+                  }
+
+                  // Day cells
+                  for (let day = 1; day <= daysInMonth; day++) {
+                    const isToday =
+                      today.getDate() === day &&
+                      today.getMonth() === month &&
+                      today.getFullYear() === year
+
+                    const dayEvents = events.filter(event => {
+                      const eventDate = new Date(event.date)
+                      return (
+                        eventDate.getDate() === day &&
+                        eventDate.getMonth() === month &&
+                        eventDate.getFullYear() === year
+                      )
+                    })
+
+                    cells.push(
+                      <div key={day} style={styles.calCell}>
+                        <span style={{
+                          ...styles.calDayNumber,
+                          ...(isToday ? styles.calToday : {})
+                        }}>{day}</span>
+                        {dayEvents.map(event => (
+                          <div
+                            key={event._id}
+                            style={{ ...styles.calEvent, background: event.color }}
+                            onClick={async () => {
+                              if (window.confirm(`Delete "${event.title}"?`)) {
+                                try {
+                                  await axios.delete(`http://localhost:5000/api/events/${groupId}/${event._id}`,
+                                    { headers: { Authorization: `Bearer ${token}` } }
+                                  )
+                                  fetchEvents()
+                                  toast.success('Event deleted!')
+                                } catch (err) { toast.error('Failed to delete') }
+                              }
+                            }}
+                          >
+                            {event.title}
+                          </div>
+                        ))}
+                      </div>
+                    )
+                  }
+                  return cells
+                })()}
+              </div>
+            </div>
+          )}
+
           {/* MEMBERS TAB */}
           {activeTab === 'members' && (
             <div style={styles.content}>
@@ -503,6 +619,66 @@
                 <input style={styles.modalInput} type="text" placeholder="Title" value={annTitle} onChange={e => setAnnTitle(e.target.value)} required />
                 <textarea style={{ ...styles.modalInput, height: '100px', resize: 'vertical' }} placeholder="Content" value={annContent} onChange={e => setAnnContent(e.target.value)} required />
                 <button style={styles.modalButton} type="submit">Post</button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* New Event Modal */}
+        {showEventForm && (
+          <div style={styles.modalOverlay} onClick={() => setShowEventForm(false)}>
+            <div style={styles.modal} onClick={e => e.stopPropagation()}>
+              <h3 style={styles.modalTitle}>New Event</h3>
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                try {
+                  await axios.post(`http://localhost:5000/api/events/${groupId}`,
+                    { title: eventTitle, date: eventDate, color: eventColor },
+                    { headers: { Authorization: `Bearer ${token}` } }
+                  )
+                  setEventTitle('')
+                  setEventDate('')
+                  setEventColor('#3D280D')
+                  setShowEventForm(false)
+                  toast.success('Event added! 📅')
+                  fetchEvents()
+                } catch (err) { toast.error('Failed to add event') }
+              }}>
+                <input
+                  style={styles.modalInput}
+                  type="text"
+                  placeholder="Event title"
+                  value={eventTitle}
+                  onChange={e => setEventTitle(e.target.value)}
+                  required
+                />
+                <input
+                  style={styles.modalInput}
+                  type="date"
+                  value={eventDate}
+                  onChange={e => setEventDate(e.target.value)}
+                  required
+                />
+                <div style={{ marginBottom: '12px' }}>
+                  <p style={{ fontSize: '12px', color: SUBTEXT, marginBottom: '8px' }}>Event Color:</p>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    {['#3D280D', '#ef4444', '#10b981', '#f59e0b', '#6366f1', '#ec4899'].map(c => (
+                      <div
+                        key={c}
+                        onClick={() => setEventColor(c)}
+                        style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: c,
+                          cursor: 'pointer',
+                          border: eventColor === c ? '3px solid #1A0F00' : '3px solid transparent'
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <button style={styles.modalButton} type="submit">Add Event</button>
               </form>
             </div>
           </div>
@@ -850,5 +1026,95 @@
       justifyContent: 'center'
     },
     noNoteIcon: { fontSize: '40px', marginBottom: '12px' },
-    noNoteText: { fontSize: '14px', color: SUBTEXT }
+    noNoteText: { fontSize: '14px', color: SUBTEXT },
+    calendarTopRow: {
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start'
+    },
+    calendarControls: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px'
+    },
+    calNavBtn: {
+      background: 'white',
+      border: `1px solid ${BORDER}`,
+      borderRadius: '6px',
+      padding: '6px 12px',
+      fontSize: '16px',
+      cursor: 'pointer',
+      color: TEXT
+    },
+    calTodayBtn: {
+      background: 'white',
+      border: `1px solid ${BORDER}`,
+      borderRadius: '6px',
+      padding: '6px 14px',
+      fontSize: '13px',
+      cursor: 'pointer',
+      color: TEXT,
+      fontWeight: '500'
+    },
+    newEventBtn: {
+      background: PRIMARY,
+      color: 'white',
+      border: 'none',
+      padding: '8px 16px',
+      borderRadius: '8px',
+      fontSize: '13px',
+      fontWeight: '600',
+      cursor: 'pointer'
+    },
+    calendarGrid: {
+      display: 'grid',
+      gridTemplateColumns: 'repeat(7, 1fr)',
+      border: `1px solid ${BORDER}`,
+      borderRadius: '12px',
+      overflow: 'hidden'
+    },
+    calDayHeader: {
+      padding: '12px',
+      textAlign: 'center',
+      fontSize: '12px',
+      fontWeight: '600',
+      color: SUBTEXT,
+      background: '#FAFAF8',
+      borderBottom: `1px solid ${BORDER}`
+    },
+    calCell: {
+      minHeight: '100px',
+      padding: '8px',
+      borderRight: `1px solid ${BORDER}`,
+      borderBottom: `1px solid ${BORDER}`,
+      background: 'white'
+    },
+    calDayNumber: {
+      fontSize: '13px',
+      fontWeight: '500',
+      color: TEXT,
+      display: 'inline-block',
+      width: '24px',
+      height: '24px',
+      lineHeight: '24px',
+      textAlign: 'center',
+      borderRadius: '50%',
+      marginBottom: '4px'
+    },
+    calToday: {
+      background: PRIMARY,
+      color: 'white',
+      fontWeight: '700'
+    },
+    calEvent: {
+      fontSize: '11px',
+      color: 'white',
+      padding: '2px 6px',
+      borderRadius: '4px',
+      marginBottom: '2px',
+      cursor: 'pointer',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap'
+    },
   }

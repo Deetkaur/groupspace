@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { icon: '✅', label: 'Tasks', path: 'tasks' },
   { icon: '📝', label: 'Notes', path: 'notes' },
   { icon: '📢', label: 'Announcements', path: 'announcements' },
+  { icon: '📅', label: 'Calendar', path: 'calendar' },
   { icon: '👥', label: 'Members', path: 'members' },
 ]
 
