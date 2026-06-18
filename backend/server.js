@@ -27,6 +27,7 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/groups', require('./routes/groups'));
 app.use('/api/tasks', require('./routes/tasks'));
 app.use('/api/announcements', require('./routes/announcements'));
+app.use('/api/notes', require('./routes/notes'));
 
 // Test route
 app.get('/', (req, res) => {

@@ -9,6 +9,7 @@ const TEXT = '#1A0F00'
 const NAV_ITEMS = [
   { icon: '📊', label: 'Dashboard', path: '/dashboard' },
   { icon: '✅', label: 'Tasks', path: 'tasks' },
+  { icon: '📝', label: 'Notes', path: 'notes' },
   { icon: '📢', label: 'Announcements', path: 'announcements' },
   { icon: '👥', label: 'Members', path: 'members' },
 ]
