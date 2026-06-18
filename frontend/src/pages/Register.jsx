@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate, Link } from 'react-router-dom'
+import toast from 'react-hot-toast'
+
+const PRIMARY = '#3D280D'
+const BORDER = '#E8D5C4'
+const SUBTEXT = '#8B6F5E'
+const TEXT = '#1A0F00'
 
 export default function Register() {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
-  const [error, setError] = useState('')
   const navigate = useNavigate()
 
   const handleChange = (e) => {
@@ -17,110 +22,185 @@ export default function Register() {
       const res = await axios.post('http://localhost:5000/api/auth/register', form)
       localStorage.setItem('token', res.data.token)
       localStorage.setItem('user', JSON.stringify(res.data.user))
+      toast.success('Account created! 🎉')
       navigate('/dashboard')
     } catch (err) {
-      setError('Registration failed. Try again.')
+      toast.error('Registration failed. Try again.')
     }
   }
 
   return (
     <div style={styles.container}>
+
+      {/* Logo */}
+      <div style={styles.logoRow} onClick={() => navigate('/')}>
+        <span style={styles.logoIcon}>🪵</span>
+        <span style={styles.logoText}>GroupSpace</span>
+      </div>
+
+      {/* Card */}
       <div style={styles.card}>
-        <h2 style={styles.title}>Create Account 🚀</h2>
-        <p style={styles.subtitle}>Join GroupSpace today</p>
+        <h2 style={styles.title}>Create your account</h2>
+        <p style={styles.subtitle}>Start collaborating in seconds</p>
 
-        {error && <p style={styles.error}>{error}</p>}
+        {/* Divider */}
+        <div style={styles.divider}>
+          <div style={styles.dividerLine} />
+          <span style={styles.dividerText}>continue with email</span>
+          <div style={styles.dividerLine} />
+        </div>
 
+        {/* Form */}
         <form onSubmit={handleSubmit}>
-          <input
-            style={styles.input}
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={form.name}
-            onChange={handleChange}
-            required
-          />
-          <input
-            style={styles.input}
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-          <input
-            style={styles.input}
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-          <button style={styles.button} type="submit">Register</button>
+          <div style={styles.inputGroup}>
+            <span style={styles.inputIcon}>👤</span>
+            <input
+              style={styles.input}
+              type="text"
+              name="name"
+              placeholder="Your name"
+              value={form.name}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div style={styles.inputGroup}>
+            <span style={styles.inputIcon}>✉️</span>
+            <input
+              style={styles.input}
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div style={styles.inputGroup}>
+            <span style={styles.inputIcon}>🔒</span>
+            <input
+              style={styles.input}
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <button style={styles.button} type="submit">
+            Create account →
+          </button>
         </form>
 
         <p style={styles.link}>
-          Already have an account? <Link to="/">Login</Link>
+          Already have an account?{' '}
+          <Link to="/login" style={styles.linkText}>Log in</Link>
         </p>
       </div>
+
     </div>
   )
 }
 
 const styles = {
   container: {
+    minHeight: '100vh',
+    background: '#FAFAF8',
     display: 'flex',
-    justifyContent: 'center',
+    flexDirection: 'column',
     alignItems: 'center',
-    height: '100vh',
+    justifyContent: 'center',
+    fontFamily: "'Inter', sans-serif"
   },
+  logoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '32px',
+    cursor: 'pointer'
+  },
+  logoIcon: { fontSize: '24px' },
+  logoText: { fontWeight: '700', fontSize: '18px', color: TEXT },
   card: {
     background: 'white',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '16px',
     padding: '40px',
-    borderRadius: '12px',
-    boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
     width: '100%',
-    maxWidth: '400px',
+    maxWidth: '420px',
+    boxShadow: '0 4px 24px rgba(61, 40, 13, 0.08)'
   },
   title: {
     fontSize: '24px',
-    marginBottom: '8px',
+    fontWeight: '800',
+    color: TEXT,
+    marginBottom: '6px',
+    textAlign: 'center'
   },
   subtitle: {
-    color: '#888',
-    marginBottom: '24px',
-  },
-  input: {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '16px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
     fontSize: '14px',
-    display: 'block',
+    color: SUBTEXT,
+    textAlign: 'center',
+    marginBottom: '24px'
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px'
+  },
+  dividerLine: {
+    flex: 1,
+    height: '1px',
+    background: BORDER
+  },
+  dividerText: {
+    fontSize: '12px',
+    color: SUBTEXT,
+    whiteSpace: 'nowrap'
+  },
+  inputGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '8px',
+    marginBottom: '12px',
+    padding: '0 12px',
+    background: 'white'
+  },
+  inputIcon: { fontSize: '14px', marginRight: '8px' },
+  input: {
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    padding: '12px 0',
+    fontSize: '14px',
+    color: TEXT,
+    background: 'transparent',
+    fontFamily: "'Inter', sans-serif"
   },
   button: {
     width: '100%',
-    padding: '12px',
-    background: '#4f46e5',
+    padding: '13px',
+    background: PRIMARY,
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    fontSize: '16px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
     marginTop: '8px',
-  },
-  error: {
-    color: 'red',
-    marginBottom: '16px',
-    fontSize: '14px',
+    marginBottom: '20px'
   },
   link: {
     textAlign: 'center',
-    marginTop: '16px',
-    fontSize: '14px',
+    fontSize: '13px',
+    color: SUBTEXT
+  },
+  linkText: {
+    color: PRIMARY,
+    fontWeight: '600',
+    textDecoration: 'none'
   }
 }

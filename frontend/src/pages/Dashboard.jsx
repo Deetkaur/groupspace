@@ -3,21 +3,27 @@ import axios from 'axios'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import Spinner from '../components/Spinner'
-import { useTheme } from '../context/ThemeContext'
+import Sidebar from '../components/Sidebar'
+
+const PRIMARY = '#3D280D'
+const PRIMARY_PALE = '#F5EDE4'
+const BORDER = '#E8D5C4'
+const SUBTEXT = '#8B6F5E'
+const TEXT = '#1A0F00'
 
 export default function Dashboard() {
   const [groups, setGroups] = useState([])
   const [groupName, setGroupName] = useState('')
   const [groupDesc, setGroupDesc] = useState('')
+  const [groupColor, setGroupColor] = useState(PRIMARY)
   const [inviteCode, setInviteCode] = useState('')
-  const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
-  const [groupColor, setGroupColor] = useState('#4f46e5')
+  const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showJoinModal, setShowJoinModal] = useState(false)
   const navigate = useNavigate()
 
   const user = JSON.parse(localStorage.getItem('user'))
   const token = localStorage.getItem('token')
-  const { colors, darkMode, toggleDarkMode } = useTheme()
 
   useEffect(() => {
     fetchGroups()
@@ -45,7 +51,8 @@ export default function Dashboard() {
       )
       setGroupName('')
       setGroupDesc('')
-      setGroupColor('#4f46e5')
+      setGroupColor(PRIMARY)
+      setShowCreateModal(false)
       toast.success('Group created! 🎉')
       fetchGroups()
     } catch (err) {
@@ -61,6 +68,7 @@ export default function Dashboard() {
         { headers: { Authorization: `Bearer ${token}` } }
       )
       setInviteCode('')
+      setShowJoinModal(false)
       toast.success('Joined group! 🎉')
       fetchGroups()
     } catch (err) {
@@ -68,232 +76,274 @@ export default function Dashboard() {
     }
   }
 
-  const logout = () => {
-    localStorage.clear()
-    navigate('/')
-  }
-
   return (
-    <div style={{ ...styles.container, background: colors.bg }}>
+    <div style={styles.page}>
+      <Sidebar isGroupPage={false} />
 
-      {/* Header */}
-      <div style={{ ...styles.header, background: colors.header }}>
-        <h1 style={styles.logo}>🏠 GroupSpace</h1>
-        <div style={styles.headerRight}>
-          <button onClick={toggleDarkMode} style={styles.darkToggle}>
-            {darkMode ? '☀️' : '🌙'}
-          </button>
-          <div style={styles.avatar}>
-            {user?.name?.charAt(0).toUpperCase()}
+      <div style={styles.main}>
+
+        {/* Top bar */}
+        <div style={styles.topbar}>
+          <input style={styles.search} placeholder="🔍 Search..." />
+          <button style={styles.newBtn} onClick={() => setShowCreateModal(true)}>+ New Group</button>
+        </div>
+
+        <div style={styles.content}>
+          <h1 style={styles.greeting}>Good day, {user?.name?.split(' ')[0]} 👋</h1>
+          <p style={styles.subGreeting}>Here's what's happening across your groups</p>
+
+          {/* Stats Row */}
+          <div style={styles.statsRow}>
+            <div style={styles.statCard}>
+              <p style={styles.statIcon}>👥</p>
+              <p style={styles.statNumber}>{groups.length}</p>
+              <p style={styles.statLabel}>Your Groups</p>
+            </div>
+            <div style={styles.statCard}>
+              <p style={styles.statIcon}>✅</p>
+              <p style={styles.statNumber}>—</p>
+              <p style={styles.statLabel}>Open Tasks</p>
+            </div>
+            <div style={styles.statCard}>
+              <p style={styles.statIcon}>📢</p>
+              <p style={styles.statNumber}>—</p>
+              <p style={styles.statLabel}>Announcements</p>
+            </div>
           </div>
-          <span style={styles.username}>{user?.name}</span>
-          <button style={styles.logoutBtn} onClick={logout}>Logout</button>
+
+          {/* Quick Actions */}
+          <div style={styles.quickActions}>
+            <button style={styles.actionBtn} onClick={() => setShowCreateModal(true)}>+ New Group</button>
+            <button style={styles.actionBtnSecondary} onClick={() => setShowJoinModal(true)}>🔗 Join Group</button>
+          </div>
+
+          {/* Groups Grid */}
+          <h2 style={styles.sectionTitle}>Your Groups</h2>
+          {loading ? (
+            <Spinner />
+          ) : groups.length === 0 ? (
+            <div style={styles.emptyState}>
+              <p style={styles.emptyIcon}>📭</p>
+              <p style={styles.emptyText}>No groups yet. Create or join one to get started!</p>
+            </div>
+          ) : (
+            <div style={styles.groupsGrid}>
+              {groups.map(group => (
+                <div
+                  key={group._id}
+                  className="card-hover fade-in"
+                  style={{ ...styles.groupCard, borderTop: `3px solid ${group.color || PRIMARY}` }}
+                  onClick={() => navigate(`/group/${group._id}`)}
+                >
+                  <div style={{ ...styles.groupCardAvatar, background: group.color || PRIMARY }}>
+                    {group.name.charAt(0).toUpperCase()}
+                  </div>
+                  <h3 style={styles.groupCardName}>{group.name}</h3>
+                  <p style={styles.groupCardDesc}>{group.description || 'No description'}</p>
+                  <p style={styles.groupCardInvite}>Code: <strong>{group.inviteCode}</strong></p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Body */}
-      <div style={styles.body}>
-
-        {/* Left Panel */}
-        <div style={styles.leftPanel}>
-
-          {/* Create Group */}
-          <div style={{ ...styles.card, background: colors.card }}>
-            <h3 style={styles.cardTitle}>➕ Create Group</h3>
-            {error && <p style={styles.error}>{error}</p>}
+      {/* Create Group Modal */}
+      {showCreateModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <h3 style={styles.modalTitle}>Create a new group</h3>
             <form onSubmit={createGroup}>
               <input
-                style={styles.input}
+                style={styles.modalInput}
                 type="text"
-                placeholder="Group Name"
+                placeholder="Group name"
                 value={groupName}
                 onChange={e => setGroupName(e.target.value)}
                 required
               />
               <input
-                style={styles.input}
+                style={styles.modalInput}
                 type="text"
                 placeholder="Description (optional)"
                 value={groupDesc}
                 onChange={e => setGroupDesc(e.target.value)}
               />
               <div style={styles.colorRow}>
-                <label style={styles.colorLabel}>Group Color:</label>
-                <div style={styles.colorOptions}>
-                  {['#4f46e5', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6', '#ec4899'].map(c => (
-                    <div
-                      key={c}
-                      onClick={() => setGroupColor(c)}
-                      style={{
-                        ...styles.colorDot,
-                        background: c,
-                        border: groupColor === c ? '3px solid #333' : '3px solid transparent'
-                      }}
-                    />
-                  ))}
-                </div>
+                {['#3D280D', '#ef4444', '#10b981', '#f59e0b', '#6366f1', '#ec4899'].map(c => (
+                  <div
+                    key={c}
+                    onClick={() => setGroupColor(c)}
+                    style={{
+                      ...styles.colorDot,
+                      background: c,
+                      border: groupColor === c ? '3px solid #1A0F00' : '3px solid transparent'
+                    }}
+                  />
+                ))}
               </div>
-              <button style={styles.button} type="submit">Create</button>
+              <button style={styles.modalButton} type="submit">Create Group</button>
             </form>
           </div>
+        </div>
+      )}
 
-          {/* Join Group */}
-          <div style={{ ...styles.card, background: colors.card }}>
-            <h3 style={styles.cardTitle}>🔗 Join Group</h3>
+      {/* Join Group Modal */}
+      {showJoinModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowJoinModal(false)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <h3 style={styles.modalTitle}>Join a group</h3>
             <form onSubmit={joinGroup}>
               <input
-                style={styles.input}
+                style={styles.modalInput}
                 type="text"
-                placeholder="Enter Invite Code"
+                placeholder="Enter invite code"
                 value={inviteCode}
                 onChange={e => setInviteCode(e.target.value)}
                 required
               />
-              <button style={styles.button} type="submit">Join</button>
+              <button style={styles.modalButton} type="submit">Join Group</button>
             </form>
           </div>
-
         </div>
+      )}
 
-        {/* Right Panel */}
-        <div style={styles.rightPanel}>
-          <h2 style={styles.sectionTitle}>Your Groups</h2>
-          {loading ? (
-            <Spinner />
-          ) : groups.length === 0 ? (
-            <p style={styles.empty}>No groups yet. Create or join one!</p>
-          ) : (
-            groups.map(group => (
-              <div
-                key={group._id}
-                className="card-hover fade-in"
-                style={{
-                  ...styles.groupCard,
-                  background: colors.card,
-                  borderLeft: `4px solid ${group.color || '#4f46e5'}`
-                }}
-                onClick={() => navigate(`/group/${group._id}`)}
-              >
-                <h3 style={{ ...styles.groupName, color: group.color || '#4f46e5' }}>{group.name}</h3>
-                <p style={styles.groupDesc}>{group.description}</p>
-                <p style={styles.inviteCode}>Invite Code: <strong>{group.inviteCode}</strong></p>
-              </div>
-            ))
-          )}
-        </div>
-
-      </div>
     </div>
   )
 }
 
 const styles = {
-  container: { minHeight: '100vh', background: '#f0f2f5' },
-  header: {
-    background: '#4f46e5',
-    color: 'white',
-    padding: '16px 32px',
+  page: { display: 'flex', minHeight: '100vh', background: '#FFFFFF', fontFamily: "'Inter', sans-serif" },
+  main: { flex: 1, display: 'flex', flexDirection: 'column' },
+  topbar: {
     display: 'flex',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    padding: '16px 32px',
+    borderBottom: `1px solid ${BORDER}`
   },
-  logo: { fontSize: '22px' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: '16px' },
-  username: { fontSize: '14px' },
-  logoutBtn: {
-    background: 'white',
-    color: '#4f46e5',
-    border: 'none',
-    padding: '8px 16px',
+  search: {
+    flex: 1,
+    maxWidth: '320px',
+    padding: '8px 14px',
     borderRadius: '8px',
-    cursor: 'pointer',
-    fontWeight: 'bold'
+    border: `1px solid ${BORDER}`,
+    fontSize: '13px',
+    outline: 'none'
   },
-  body: {
-    display: 'flex',
-    gap: '24px',
-    padding: '32px',
-    maxWidth: '1100px',
-    margin: '0 auto'
-  },
-  leftPanel: { width: '320px', flexShrink: 0 },
-  rightPanel: { flex: 1 },
-  card: {
-    background: 'white',
-    borderRadius: '12px',
-    padding: '24px',
-    marginBottom: '24px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)'
-  },
-  cardTitle: { marginBottom: '16px', fontSize: '16px' },
-  input: {
-    width: '100%',
-    padding: '10px',
-    marginBottom: '12px',
-    borderRadius: '8px',
-    border: '1px solid #ddd',
-    fontSize: '14px',
-    display: 'block',
-    boxSizing: 'border-box'
-  },
-  button: {
-    width: '100%',
-    padding: '10px',
-    background: '#4f46e5',
+  newBtn: {
+    background: PRIMARY,
     color: 'white',
     border: 'none',
+    padding: '9px 18px',
     borderRadius: '8px',
-    cursor: 'pointer',
-    fontSize: '14px'
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer'
   },
-  sectionTitle: { marginBottom: '16px', fontSize: '20px' },
-  empty: { color: '#888', fontSize: '14px' },
-  groupCard: {
-    background: 'white',
+  content: { padding: '32px', maxWidth: '1000px' },
+  greeting: { fontSize: '28px', fontWeight: '800', color: TEXT, marginBottom: '4px' },
+  subGreeting: { fontSize: '14px', color: SUBTEXT, marginBottom: '28px' },
+  statsRow: { display: 'flex', gap: '16px', marginBottom: '28px' },
+  statCard: {
+    flex: 1,
+    background: PRIMARY_PALE,
     borderRadius: '12px',
     padding: '20px',
-    marginBottom: '16px',
-    boxShadow: '0 2px 10px rgba(0,0,0,0.08)',
-    cursor: 'pointer',
-    transition: 'transform 0.2s',
+    textAlign: 'center'
   },
-  avatar: {
+  statIcon: { fontSize: '20px', marginBottom: '6px' },
+  statNumber: { fontSize: '24px', fontWeight: '800', color: TEXT },
+  statLabel: { fontSize: '12px', color: SUBTEXT, marginTop: '2px' },
+  quickActions: { display: 'flex', gap: '12px', marginBottom: '32px' },
+  actionBtn: {
+    background: PRIMARY,
+    color: 'white',
+    border: 'none',
+    padding: '10px 18px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    fontWeight: '600',
+    cursor: 'pointer'
+  },
+  actionBtnSecondary: {
+    background: 'white',
+    color: TEXT,
+    border: `1px solid ${BORDER}`,
+    padding: '10px 18px',
+    borderRadius: '8px',
+    fontSize: '13px',
+    cursor: 'pointer'
+  },
+  sectionTitle: { fontSize: '16px', fontWeight: '700', color: TEXT, marginBottom: '16px' },
+  emptyState: { textAlign: 'center', padding: '60px 0' },
+  emptyIcon: { fontSize: '32px', marginBottom: '12px' },
+  emptyText: { fontSize: '13px', color: SUBTEXT },
+  groupsGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+    gap: '16px'
+  },
+  groupCard: {
+    background: 'white',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '12px',
+    padding: '20px',
+    cursor: 'pointer'
+  },
+  groupCardAvatar: {
     width: '36px',
     height: '36px',
-    borderRadius: '50%',
-    background: 'white',
-    color: '#4f46e5',
+    borderRadius: '8px',
+    color: 'white',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    fontWeight: 'bold',
-    fontSize: '16px'
+    fontWeight: '700',
+    fontSize: '15px',
+    marginBottom: '12px'
   },
-  colorRow: {
-  display: 'flex',
-  alignItems: 'center',
-  gap: '12px',
-  marginBottom: '12px'
+  groupCardName: { fontSize: '15px', fontWeight: '700', color: TEXT, marginBottom: '4px' },
+  groupCardDesc: { fontSize: '12px', color: SUBTEXT, marginBottom: '10px' },
+  groupCardInvite: { fontSize: '11px', color: PRIMARY },
+  modalOverlay: {
+    position: 'fixed',
+    top: 0, left: 0, right: 0, bottom: 0,
+    background: 'rgba(26, 15, 0, 0.4)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000
   },
-  colorLabel: { fontSize: '13px', color: '#555' },
-  colorOptions: { display: 'flex', gap: '8px' },
-  colorDot: {
-    width: '24px',
-    height: '24px',
-    borderRadius: '50%',
-    cursor: 'pointer'
+  modal: {
+    background: 'white',
+    borderRadius: '16px',
+    padding: '28px',
+    width: '90%',
+    maxWidth: '380px'
   },
-  darkToggle: {
-    background: 'rgba(255,255,255,0.2)',
+  modalTitle: { fontSize: '17px', fontWeight: '700', color: TEXT, marginBottom: '18px' },
+  modalInput: {
+    width: '100%',
+    padding: '11px',
+    marginBottom: '12px',
+    borderRadius: '8px',
+    border: `1px solid ${BORDER}`,
+    fontSize: '13px',
+    boxSizing: 'border-box',
+    outline: 'none'
+  },
+  colorRow: { display: 'flex', gap: '8px', marginBottom: '16px' },
+  colorDot: { width: '24px', height: '24px', borderRadius: '50%', cursor: 'pointer' },
+  modalButton: {
+    width: '100%',
+    padding: '11px',
+    background: PRIMARY,
+    color: 'white',
     border: 'none',
     borderRadius: '8px',
-    padding: '8px 12px',
-    cursor: 'pointer',
-    fontSize: '16px',
-    color: 'white'
-  },
-  groupName: { fontSize: '18px', marginBottom: '4px' },
-  groupDesc: { color: '#888', fontSize: '14px', marginBottom: '8px' },
-  inviteCode: { fontSize: '12px', color: '#4f46e5' },
-  error: { color: 'red', fontSize: '14px', marginBottom: '12px' }
+    fontSize: '13px',
+    fontWeight: '700',
+    cursor: 'pointer'
+  }
 }

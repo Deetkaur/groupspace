@@ -2,12 +2,15 @@ import { useState } from 'react'
 import axios from 'axios'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { useTheme } from '../context/ThemeContext'
+
+const PRIMARY = '#3D280D'
+const BORDER = '#E8D5C4'
+const SUBTEXT = '#8B6F5E'
+const TEXT = '#1A0F00'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const navigate = useNavigate()
-  const { colors, darkMode, toggleDarkMode } = useTheme()
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value })
@@ -27,103 +30,165 @@ export default function Login() {
   }
 
   return (
-    <div style={{ ...styles.container, background: colors.bg }}>
-      <button
-        onClick={toggleDarkMode}
-        style={styles.darkToggle}
-      >
-        {darkMode ? '☀️ Light' : '🌙 Dark'}
-      </button>
-      <div style={{ ...styles.card, background: colors.card }}>
-        <h2 style={{ ...styles.title, color: colors.text }}>Welcome Back 👋</h2>
-        <p style={{ ...styles.subtitle, color: colors.subtext }}>Login to GroupSpace</p>
+    <div style={styles.container}>
 
+      {/* Logo */}
+      <div style={styles.logoRow} onClick={() => navigate('/')}>
+        <span style={styles.logoIcon}>🪵</span>
+        <span style={styles.logoText}>GroupSpace</span>
+      </div>
+
+      {/* Card */}
+      <div style={styles.card}>
+        <h2 style={styles.title}>Welcome back</h2>
+        <p style={styles.subtitle}>Log in to your workspace</p>
+
+        {/* Divider */}
+        <div style={styles.divider}>
+          <div style={styles.dividerLine} />
+          <span style={styles.dividerText}>continue with email</span>
+          <div style={styles.dividerLine} />
+        </div>
+
+        {/* Form */}
         <form onSubmit={handleSubmit}>
-          <input
-            style={{ ...styles.input, background: colors.input, borderColor: colors.inputBorder, color: colors.text }}
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
-          <input
-            style={{ ...styles.input, background: colors.input, borderColor: colors.inputBorder, color: colors.text }}
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-          <button style={styles.button} type="submit">Login</button>
+          <div style={styles.inputGroup}>
+            <span style={styles.inputIcon}>✉️</span>
+            <input
+              style={styles.input}
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={form.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <div style={styles.inputGroup}>
+            <span style={styles.inputIcon}>🔒</span>
+            <input
+              style={styles.input}
+              type="password"
+              name="password"
+              placeholder="••••••••"
+              value={form.password}
+              onChange={handleChange}
+              required
+            />
+          </div>
+          <button style={styles.button} type="submit">
+            Log in →
+          </button>
         </form>
 
-        <p style={{ ...styles.link, color: colors.subtext }}>
-          Don't have an account? <Link to="/register">Register</Link>
+        <p style={styles.link}>
+          Don't have an account? <Link to="/register" style={styles.linkText}>Sign up</Link>
         </p>
       </div>
+
     </div>
   )
 }
 
 const styles = {
   container: {
+    minHeight: '100vh',
+    background: '#FAFAF8',
     display: 'flex',
-    justifyContent: 'center',
+    flexDirection: 'column',
     alignItems: 'center',
-    height: '100vh',
-    position: 'relative'
+    justifyContent: 'center',
+    fontFamily: "'Inter', sans-serif"
   },
-  darkToggle: {
-    position: 'absolute',
-    top: '20px',
-    right: '20px',
-    background: 'none',
-    border: '1px solid #ddd',
-    borderRadius: '8px',
-    padding: '8px 16px',
-    cursor: 'pointer',
-    fontSize: '14px'
+  logoRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginBottom: '32px',
+    cursor: 'pointer'
   },
+  logoIcon: { fontSize: '24px' },
+  logoText: { fontWeight: '700', fontSize: '18px', color: TEXT },
   card: {
-    padding: '40px',
+    background: 'white',
+    border: `1px solid ${BORDER}`,
     borderRadius: '16px',
-    boxShadow: '0 4px 24px rgba(0,0,0,0.1)',
+    padding: '40px',
     width: '100%',
-    maxWidth: '400px',
-    animation: 'fadeIn 0.4s ease'
+    maxWidth: '420px',
+    boxShadow: '0 4px 24px rgba(61, 40, 13, 0.08)'
   },
-  title: { fontSize: '24px', marginBottom: '8px', fontWeight: '700' },
-  subtitle: { marginBottom: '24px', fontSize: '14px' },
-  input: {
-    width: '100%',
-    padding: '12px',
-    marginBottom: '16px',
-    borderRadius: '8px',
-    border: '1px solid',
+  title: {
+    fontSize: '24px',
+    fontWeight: '800',
+    color: TEXT,
+    marginBottom: '6px',
+    textAlign: 'center'
+  },
+  subtitle: {
     fontSize: '14px',
-    display: 'block',
-    boxSizing: 'border-box',
+    color: SUBTEXT,
+    textAlign: 'center',
+    marginBottom: '24px'
+  },
+  divider: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+    marginBottom: '24px'
+  },
+  dividerLine: {
+    flex: 1,
+    height: '1px',
+    background: BORDER
+  },
+  dividerText: {
+    fontSize: '12px',
+    color: SUBTEXT,
+    whiteSpace: 'nowrap'
+  },
+  inputGroup: {
+    display: 'flex',
+    alignItems: 'center',
+    border: `1px solid ${BORDER}`,
+    borderRadius: '8px',
+    marginBottom: '12px',
+    padding: '0 12px',
+    background: 'white',
     transition: 'border 0.2s'
+  },
+  inputIcon: { fontSize: '14px', marginRight: '8px' },
+  input: {
+    flex: 1,
+    border: 'none',
+    outline: 'none',
+    padding: '12px 0',
+    fontSize: '14px',
+    color: TEXT,
+    background: 'transparent',
+    fontFamily: "'Inter', sans-serif"
   },
   button: {
     width: '100%',
-    padding: '12px',
-    background: '#4f46e5',
+    padding: '13px',
+    background: PRIMARY,
     color: 'white',
     border: 'none',
     borderRadius: '8px',
-    fontSize: '16px',
+    fontSize: '15px',
+    fontWeight: '700',
     cursor: 'pointer',
-    fontWeight: '600',
     marginTop: '8px',
-    transition: 'opacity 0.2s'
+    marginBottom: '20px'
   },
   link: {
     textAlign: 'center',
-    marginTop: '16px',
-    fontSize: '14px'
+    fontSize: '13px',
+    color: SUBTEXT
+  },
+  linkText: {
+    color: PRIMARY,
+    fontWeight: '600',
+    textDecoration: 'none'
   }
 }
